@@ -106,7 +106,7 @@ def render_cow(
 
 def make_gif(rendered_images, gif_path, fps=15):
     print("Creating GIF...")
-    imageio.mimsave(gif_path, rendered_images, duration=1000/fps)
+    imageio.mimsave(gif_path, rendered_images, duration=1000/fps, loop=0)
     print("Done.")
 
 
@@ -127,5 +127,5 @@ if __name__ == "__main__":
         "dist": [-3.0]*n_views,
         "azim": list(np.linspace(0,360,n_views)),
     }
-    images = render_n_views(obj_path=args.cow_path, n=n_views, image_size=args.image_size, **n_view_config)
+    images = render_n_views(obj_path=args.obj_path, n=n_views, image_size=args.image_size, **n_view_config)
     make_gif(images, args.save_path, args.fps)
