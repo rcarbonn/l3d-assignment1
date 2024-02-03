@@ -112,6 +112,18 @@ def unproject_depth_image(image, mask, depth, camera):
 
     return points, rgb
 
+def load_obj_mesh(path="data/cow_mesh.obj"):
+    """
+    Loads vertices and faces from an obj file.
+
+    Returns:
+        vertices (torch.Tensor): The vertices of the mesh (N_v, 3).
+        faces (torch.Tensor): The faces of the mesh (N_f, 3).
+    """
+    vertices, faces, _ = load_obj(path)
+    faces = faces.verts_idx
+    return vertices, faces
+
 
 def load_cow_mesh(path="data/cow_mesh.obj"):
     """
