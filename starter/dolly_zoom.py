@@ -35,8 +35,8 @@ def dolly_zoom(
 
     renders = []
     K = 1.5*np.tan(60*np.pi/180)
-    for fov in tqdm(fovs[:-10]):
-        f = 1/np.tan(fov*np.pi/360)
+    for fov in tqdm(fovs):
+        # f = 1/np.tan(fov*np.pi/360)
         d = K/(np.tan(fov*np.pi/360))
         print(d)
         distance=3

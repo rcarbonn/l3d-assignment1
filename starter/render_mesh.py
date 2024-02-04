@@ -14,6 +14,17 @@ import imageio
 
 from starter.utils import get_device, get_mesh_renderer, load_cow_mesh, load_obj_mesh
 
+
+def get_color_interpolation(color1, color2, mesh_pts):
+    zmin = mesh_pts[:, 2].min()
+    zmax = mesh_pts[:, 2].max()
+    color1 = np.array(color1)
+    color2 = np.array(color2)
+    alpha = (mesh_pts[:, 2] - zmin) / (zmax - zmin)
+    alpha = alpha.reshape(-1, 1)
+    color = alpha * color2 + (1 - alpha) * color1
+    return color
+
 def render_n_views(
     obj_path="data/cow.obj", n=1,
     image_size=256, color=[0.7, 0.7, 1], device=None,
@@ -34,8 +45,12 @@ def render_n_views(
     vertices, faces = load_cow_mesh(obj_path)
     vertices = vertices.unsqueeze(0).repeat(n,1,1)  # (N_v, 3) -> (1, N_v, 3)
     faces = faces.unsqueeze(0).repeat(n,1,1)  # (N_f, 3) -> (1, N_f, 3)
+
+    if kwargs.get("color_texture", False):
+        color = get_color_interpolation([1.0,0.0,0.0], [0.0,0.0,1.0], vertices[0].cpu().numpy())
+
     textures = torch.ones_like(vertices)  # (1, N_v, 3)
-    textures = textures * torch.tensor(color)  # (1, N_v, 3)
+    textures = textures * torch.tensor(color, dtype=torch.float)  # (1, N_v, 3)
     mesh = pytorch3d.structures.Meshes(
         verts=vertices,
         faces=faces,
@@ -126,6 +141,7 @@ if __name__ == "__main__":
     n_view_config = {
         "dist": [-3.0]*n_views,
         "azim": list(np.linspace(0,360,n_views)),
+        "color_texture": True
     }
     images = render_n_views(obj_path=args.obj_path, n=n_views, image_size=args.image_size, **n_view_config)
     make_gif(images, args.save_path, args.fps)

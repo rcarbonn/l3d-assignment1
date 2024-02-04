@@ -25,8 +25,9 @@ def render_cow(
 
     R_relative = torch.tensor(R_relative).float()
     T_relative = torch.tensor(T_relative).float()
-    R = R_relative @ torch.tensor([[1.0, 0, 0], [0, 1, 0], [0, 0, 1]])
-    T = R_relative @ torch.tensor([0.0, 0, 3]) + T_relative
+    R = R_relative @ torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+    T = R_relative @ torch.tensor([0.0, 0.0, 3.0]) + T_relative
+    print(T)
     # since the pytorch3d internal uses Point= point@R+t instead of using Point=R @ point+t,
     # we need to add R.t() to compensate that.
     renderer = get_mesh_renderer(image_size=image_size)
@@ -42,7 +43,20 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--cow_path", type=str, default="data/cow_with_axis.obj")
     parser.add_argument("--image_size", type=int, default=256)
-    parser.add_argument("--output_path", type=str, default="images/transform_cow.jpg")
+    parser.add_argument("--output_path", type=str, default="results/transform_cow.jpg")
     args = parser.parse_args()
 
-    plt.imsave(args.output_path, render_cow(cow_path=args.cow_path, image_size=args.image_size))
+    # rotation about z by 90 degrees
+    R1 = [[0, -1, 0], [1, 0, 0], [0, 0, 1]]
+    # translation along z by +2
+    T2 = [0, 0, 3.0]
+    # translation along x by +0.5, y by -0.4, z by -0.1
+    T3 = [0.5, -0.4, -0.1]
+    # rotation about y by -90 degrees
+    R4 = [[0, 0, -1], [0, 1, 0], [1, 0, 0]]
+    T4 = [3, 0, 3]
+
+    plt.imsave("results/transform_cow_r1.jpg", render_cow(cow_path=args.cow_path, image_size=args.image_size, R_relative=R1))
+    plt.imsave("results/transform_cow_t2.jpg", render_cow(cow_path=args.cow_path, image_size=args.image_size, T_relative=T2))
+    plt.imsave("results/transform_cow_t3.jpg", render_cow(cow_path=args.cow_path, image_size=args.image_size, T_relative=T3))
+    plt.imsave("results/transform_cow_t4.jpg", render_cow(cow_path=args.cow_path, image_size=args.image_size, R_relative=R4, T_relative=T4))
