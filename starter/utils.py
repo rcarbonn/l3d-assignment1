@@ -10,6 +10,7 @@ from pytorch3d.renderer import (
     HardPhongShader,
 )
 from pytorch3d.io import load_obj
+import imageio
 
 
 def get_device():
@@ -136,3 +137,9 @@ def load_cow_mesh(path="data/cow_mesh.obj"):
     vertices, faces, _ = load_obj(path)
     faces = faces.verts_idx
     return vertices, faces
+
+
+def make_gif(rendered_images, gif_path, fps=15):
+    print("Creating GIF...")
+    imageio.mimsave(gif_path, rendered_images, duration=1000/fps, loop=0)
+    print("Done.")

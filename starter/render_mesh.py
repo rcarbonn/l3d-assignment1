@@ -12,7 +12,7 @@ import torch
 import numpy as np
 import imageio
 
-from starter.utils import get_device, get_mesh_renderer, load_cow_mesh, load_obj_mesh
+from starter.utils import get_device, get_mesh_renderer, load_cow_mesh, load_obj_mesh, make_gif
 
 
 def get_color_interpolation(color1, color2, mesh_pts):
@@ -42,7 +42,7 @@ def render_n_views(
     renderer = get_mesh_renderer(image_size=image_size)
 
     # Get the vertices, faces, and textures.
-    vertices, faces = load_cow_mesh(obj_path)
+    vertices, faces = load_obj_mesh(obj_path)
     vertices = vertices.unsqueeze(0).repeat(n,1,1)  # (N_v, 3) -> (1, N_v, 3)
     faces = faces.unsqueeze(0).repeat(n,1,1)  # (N_f, 3) -> (1, N_f, 3)
 
@@ -119,10 +119,6 @@ def render_cow(
     return rend
 
 
-def make_gif(rendered_images, gif_path, fps=15):
-    print("Creating GIF...")
-    imageio.mimsave(gif_path, rendered_images, duration=1000/fps, loop=0)
-    print("Done.")
 
 
 if __name__ == "__main__":
