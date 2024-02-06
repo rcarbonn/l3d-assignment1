@@ -1,5 +1,8 @@
 # Cube.obj
 
+mtllib cube.mtl
+usemtl material_1
+
 # Vertices
 v -0.5 -0.5 -0.5
 v -0.5 -0.5 0.5

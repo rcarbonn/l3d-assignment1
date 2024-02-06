@@ -161,57 +161,9 @@ def render_parametric_surface(surface="torus", image_size=256, num_samples=200, 
 
     points = torch.stack((x.flatten(), y.flatten(), z.flatten()), dim=1)
     color = (points - points.min()) / (points.max() - points.min())
-    print(points.shape)
-    # n_view_config = {
-    #     "dist": [-30.0]*n_views,
-    #     "azim": list(np.linspace(0,360,n_views)),
-    #     "color_texture": True,
-    #     "up": ((0,1,0),)
-    # }
     imgs = render_point_cloud({"verts": points, "rgb": color}, image_size=image_size, n=n_views, **kwargs)
     return imgs
 
-
-
-# def render_torus(image_size=256, num_samples=200, device=None, n_views=1):
-#     """
-#     Renders a torus using parametric sampling. Samples num_samples ** 2 points.
-#     """
-
-#     if device is None:
-#         device = get_device()
-
-#     phi = torch.linspace(0, 2 * np.pi, num_samples*10)
-#     theta = torch.linspace(0, 2* np.pi, num_samples)
-#     # Densely sample phi and theta on a grid
-#     Phi, Theta = torch.meshgrid(phi, theta)
-#     R = 2
-#     r = 0.5
-
-#     x = (R+r*torch.cos(Theta)) * torch.cos(Phi)
-#     y = (R+r*torch.cos(Theta)) * torch.sin(Phi)
-#     z = r*torch.sin(Theta)
-
-#     # Parametric form of hyperboloid
-#     # u = torch.linspace(0, 2*np.pi, num_samples)
-#     # v = torch.linspace(-3, 3, num_samples)
-#     # u, v = torch.meshgrid(u, v)
-
-#     # x = torch.cosh(v)*torch.cos(u)
-#     # y = torch.sinh(v)*torch.sin(u)
-#     # z = torch.sinh(v)
-
-#     points = torch.stack((x.flatten(), y.flatten(), z.flatten()), dim=1)
-#     color = (points - points.min()) / (points.max() - points.min())
-#     print(points.shape)
-#     n_view_config = {
-#         "dist": [-30.0]*n_views,
-#         "azim": list(np.linspace(0,360,n_views)),
-#         "color_texture": True,
-#         "up": ((0,1,0),)
-#     }
-#     imgs = render_point_cloud({"verts": points, "rgb": color}, n=n_views, **n_view_config)
-#     return imgs
 
 def render_implicit_mesh(obj="torus", image_size=256, voxel_size=64, device=None, n_views=1, **kwargs):
 
@@ -240,12 +192,6 @@ def render_implicit_mesh(obj="torus", image_size=256, voxel_size=64, device=None
     mesh = pytorch3d.structures.Meshes(vertices, faces, textures=textures).to(
         device
     )
-    # n_view_config = {
-    #     "dist": [10.0]*n_views,
-    #     "elev": [-60.0]*n_views,
-    #     "azim": list(np.linspace(0,360,n_views)),
-    #     "color_texture": True
-    # }
 
     Rs, Ts = pytorch3d.renderer.look_at_view_transform(dist=kwargs.get("dist", [10.0]*n_views),
                                                         elev=kwargs.get("elev", [0.0]*n_views),
@@ -260,53 +206,6 @@ def render_implicit_mesh(obj="torus", image_size=256, voxel_size=64, device=None
     rend = list(rend[..., :3].detach().cpu().numpy().clip(0, 1))
     rend = [(im*255).astype(np.uint8) for im in rend]
     return rend
-
-
-# def render_torus_mesh(image_size=256, voxel_size=64, device=None, n_views=1, **kwargs):
-#     if device is None:
-#         device = get_device()
-#     min_value = -3.0
-#     max_value = 3.0
-#     R = 2
-#     r = 0.5
-#     X, Y, Z = torch.meshgrid([torch.linspace(min_value, max_value, voxel_size)] * 3)
-#     voxels = (X ** 2 + Y ** 2 + Z ** 2 + R**2 - r**2)**2 - 4*R**2*(X**2 + Y**2)
-#     # voxels for hyperboloid
-#     # voxels = X ** 2 + Y ** 2 - Z ** 2 -1
-#     vertices, faces = mcubes.marching_cubes(mcubes.smooth(voxels), isovalue=0)
-#     vertices = torch.tensor(vertices).float()
-#     faces = torch.tensor(faces.astype(int))
-#     # Vertex coordinates are indexed by array position, so we need to
-#     # renormalize the coordinate system.
-#     vertices = (vertices / voxel_size) * (max_value - min_value) + min_value
-#     textures = (vertices - vertices.min()) / (vertices.max() - vertices.min())
-#     vertices = vertices.unsqueeze(0).repeat(n_views,1,1)
-#     faces = faces.unsqueeze(0).repeat(n_views,1,1)
-#     textures = pytorch3d.renderer.TexturesVertex(vertices)
-
-#     mesh = pytorch3d.structures.Meshes(vertices, faces, textures=textures).to(
-#         device
-#     )
-#     n_view_config = {
-#         "dist": [10.0]*n_views,
-#         "elev": [-60.0]*n_views,
-#         "azim": list(np.linspace(0,360,n_views)),
-#         "color_texture": True
-#     }
-
-#     Rs, Ts = pytorch3d.renderer.look_at_view_transform(dist=n_view_config.get("dist", [10.0]*n_views),
-#                                                         elev=n_view_config.get("elev", [0.0]*n_views),
-#                                                         azim=n_view_config.get("azim",[0.0]*n_views),
-#                                                         up=((0,1,0),), device=device)
-
-#     lights = pytorch3d.renderer.PointLights(location=[[0, 0.0, -4.0]], device=device,)
-#     renderer = get_mesh_renderer(image_size=image_size, device=device)
-#     # R, T = pytorch3d.renderer.look_at_view_transform(dist=10, elev=-60, azim=0)
-#     cameras = pytorch3d.renderer.FoVPerspectiveCameras(R=Rs, T=Ts, device=device)
-#     rend = renderer(mesh, cameras=cameras, lights=lights)
-#     rend = list(rend[..., :3].detach().cpu().numpy().clip(0, 1))
-#     rend = [(im*255).astype(np.uint8) for im in rend]
-#     return rend
 
 
 def render_sphere_mesh(image_size=256, voxel_size=64, device=None):
@@ -353,11 +252,11 @@ if __name__ == "__main__":
         image = render_bridge(image_size=args.image_size)
     elif args.render == "parametric":
         # image = render_sphere(image_size=args.image_size, num_samples=args.num_samples)
-        image = render_torus(image_size=args.image_size, num_samples=args.num_samples, n_views=10)
+        image = render_parametric_surface(surface="torus", image_size=args.image_size, num_samples=args.num_samples, n_views=10)
         make_gif(image, args.output_path, args.fps)
     elif args.render == "implicit":
         # image = render_sphere_mesh(image_size=args.image_size)
-        image = render_torus_mesh(image_size=args.image_size, n_views=10)
+        image = render_implicit_mesh(image_size=args.image_size, n_views=10)
         make_gif(image, args.output_path, args.fps)
     elif args.render == "rgbd":
         image1,image2,image3 = render_rgbd_point_cloud(n_views=10)

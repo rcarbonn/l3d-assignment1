@@ -2,8 +2,9 @@ import numpy as np
 import argparse 
 import matplotlib.pyplot as plt
 
-from starter.render_mesh import render_n_views, make_gif
-from starter.render_mesh import render_cow
+from starter.utils import make_gif
+from starter.render_mesh import render_n_views
+from starter.render_mesh import render_cow, render_textured_mesh
 from starter.dolly_zoom import dolly_zoom
 from starter.camera_transforms import render_cow as render_cow_transformed
 from starter.render_generic import render_bridge, render_parametric_surface, render_implicit_mesh, render_rgbd_point_cloud
@@ -110,8 +111,22 @@ QUESTION_PARAMS = {
                     "color_texture": True
                 }
             }
-
         }
+    },
+    "q6" : {
+        "obj_path" : "data/Tennis_Ball.obj",
+        "save_path" : "results/",
+        "image_size" : 256,
+        "fps" : 5,
+        "duration" : 5,
+        "n_views" : 36,
+        "n_view_config" : {
+            "dist": [-0.5]*36,
+            "elev": [0.0]*36,
+            "azim": list(np.linspace(0,360,36)),
+            "color_texture": True
+        },
+        "morph" : "scaled",
 
     }
 }
@@ -195,7 +210,16 @@ def main(args):
             else:
                 continue
                 raise Exception("Did not understand {}".format(rtype))
-                # continue
+    
+    elif args.question == "q6":
+        q6 = args.question
+        images = render_textured_mesh(obj_path=config["obj_path"], image_size=config["image_size"], n=config["n_views"], morph=config["morph"], **config["n_view_config"])
+        save_path = config["save_path"] + q6 + ".1b.gif"
+        make_gif(images, save_path, config["fps"])
+        # config["morph"] = "color"
+        # images = render_textured_mesh(obj_path=config["obj_path"], image_size=config["image_size"], n=config["n_views"], morph=config["morph"], **config["n_view_config"])
+        # save_path = config["save_path"] + q6 + ".2b.gif"
+        # make_gif(images, save_path, config["fps"])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

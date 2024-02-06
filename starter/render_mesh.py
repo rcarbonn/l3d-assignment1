@@ -119,6 +119,66 @@ def render_cow(
     return rend
 
 
+def render_textured_mesh(
+    obj_path="data/cow_with_axis.obj",
+    image_size=256,
+    device=None,
+    n=1,
+    **kwargs
+):
+    if device is None:
+        device = get_device()
+
+    if kwargs.get("morph", "scaled")=="scaled":
+        mesh1 = pytorch3d.io.load_objs_as_meshes([obj_path])
+        batched_meshes = pytorch3d.structures.join_meshes_as_batch([mesh1] * n)  
+        sizes1 = torch.Tensor(np.linspace(5.0, 0.7, n//2))
+        sizes2 = torch.Tensor(np.linspace(0.7, 5.0, n//2))
+        sizes = torch.cat([sizes1, sizes2])
+        batched_meshes = batched_meshes.scale_verts(sizes)
+        batched_meshes = batched_meshes.to(device)
+    
+    if kwargs.get("morph", "scaled")=="color":
+        vertices, faces = load_obj_mesh(obj_path)
+        vertices = vertices.unsqueeze(0).repeat(n,1,1)
+        faces = faces.unsqueeze(0).repeat(n,1,1)
+
+        zmax = 360
+        zmin = 0
+        z = np.linspace(zmin, zmax, n)
+        color1 = np.array([1.0, 0.0, 0.0])
+        color2 = np.array([0.0, 0.0, 1.0])
+        alpha = (z - zmin) / (zmax - zmin)
+        alpha = alpha.reshape(-1, 1)
+        color = alpha * color2 + (1 - alpha) * color1
+
+
+        textures = torch.ones_like(vertices)  # (1, N_v, 3)
+        textures = textures * torch.tensor(color, dtype=torch.float).unsqueeze(1)  # (1, N_v, 3)
+        batched_meshes = pytorch3d.structures.Meshes(
+            verts=vertices,
+            faces=faces,
+            textures=pytorch3d.renderer.TexturesVertex(textures),
+        )
+        # batched_meshes = pytorch3d.structures.join_meshes_as_batch([mesh1] * n)  
+        batched_meshes = batched_meshes.to(device)
+
+
+    Rs, Ts = pytorch3d.renderer.look_at_view_transform(dist=kwargs.get("dist", [-3.0]*n),
+                                                        elev=kwargs.get("elev", [0.0]*n),
+                                                        azim=kwargs.get("azim",[0.0]*n),
+                                                        up=((0,1,0),), device=device)
+    renderer = get_mesh_renderer(image_size=image_size)
+    cameras = pytorch3d.renderer.FoVPerspectiveCameras(
+        R=Rs, T=Ts, device=device,
+    )
+    lights = pytorch3d.renderer.PointLights(location=[[0, 0.0, -3.0]], device=device,)
+    rend = renderer(batched_meshes, cameras=cameras, lights=lights)
+    rend = list(rend.cpu().numpy()[..., :3])  # (B, H, W, 4) -> (H, W, 3)
+    rend = [(im*255).astype(np.uint8) for im in rend]
+    return rend
+
+
 
 
 if __name__ == "__main__":
