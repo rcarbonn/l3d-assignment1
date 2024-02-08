@@ -17,6 +17,7 @@ import torch
 import imageio
 
 from starter.utils import get_device, get_mesh_renderer, get_points_renderer, unproject_depth_image, make_gif
+from starter.utils import load_obj_mesh
 
 
 def load_rgbd_data(path="data/rgbd_data.pkl"):
@@ -51,6 +52,7 @@ def render_point_cloud(
     background_color=(1, 1, 1),
     device=None,
     n=1,
+    radius=0.01,
     **kwargs
 ):
     """
@@ -59,7 +61,7 @@ def render_point_cloud(
     if device is None:
         device = get_device()
     renderer = get_points_renderer(
-        image_size=image_size, background_color=background_color
+        image_size=image_size, background_color=background_color, radius=radius
     )
     # point_cloud = np.load(point_cloud_path)
     verts = torch.Tensor(point_cloud["verts"][::]).to(device).unsqueeze(0).repeat(n,1,1)
@@ -233,6 +235,42 @@ def render_sphere_mesh(image_size=256, voxel_size=64, device=None):
     cameras = pytorch3d.renderer.FoVPerspectiveCameras(R=R, T=T, device=device)
     rend = renderer(mesh, cameras=cameras, lights=lights)
     return rend[0, ..., :3].detach().cpu().numpy().clip(0, 1)
+
+
+def sample_points_from_mesh(obj_path, num_samples=10, n=1, image_size=256, device=None, **kwargs):
+
+    if device is None:
+        device = get_device()
+    vertices, faces = load_obj_mesh(obj_path)
+    face_coords = vertices[faces]
+    p = []
+    for triangle in face_coords:
+        x = triangle[0]
+        y = triangle[1]
+        z = triangle[2]
+        # x = triangle[:,0]
+        # y = triangle[:,1]
+        # z = triangle[:,2]
+        area = np.abs(np.linalg.norm(np.cross(x - z, y - z)) / 2)
+        p.append(area)
+    p = np.array(p)
+    p = p / p.sum()
+    # print(p)
+    # d=(1−r1−−√)a+r1−−√(1−r2)b+r1−−√r2
+    samp = np.random.choice(len(face_coords), num_samples, p=p)
+    pts = []
+    for s in samp:
+        f = face_coords[s]
+        r1, r2 = np.random.rand(2)
+        d = (1 - np.sqrt(r1)) * f[0] + np.sqrt(r1) * (1 - r2) * f[1] + np.sqrt(r1) * r2 * f[2]
+        pts.append(d.numpy())
+    pts = np.array(pts)
+    rgb = np.ones_like(pts)*np.random.rand(3)
+    # rgb = np.random.rand(len(pts), 3)
+    point_cloud = {"verts": pts, "rgb": rgb}
+    imgs = render_point_cloud(point_cloud, image_size=image_size, n=n, device=device, radius=0.05, **kwargs)
+    return imgs
+
 
 
 if __name__ == "__main__":

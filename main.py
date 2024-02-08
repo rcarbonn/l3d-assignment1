@@ -8,6 +8,7 @@ from starter.render_mesh import render_cow, render_textured_mesh
 from starter.dolly_zoom import dolly_zoom
 from starter.camera_transforms import render_cow as render_cow_transformed
 from starter.render_generic import render_bridge, render_parametric_surface, render_implicit_mesh, render_rgbd_point_cloud
+from starter.render_generic import sample_points_from_mesh
 
 QUESTION_PARAMS = {
     "q1" : {
@@ -127,8 +128,24 @@ QUESTION_PARAMS = {
             "color_texture": True
         },
         "morph" : "scaled",
-
-    }
+    },
+    "q7" : {
+        "cow_path" : "data/cow.obj",
+        "obj_path" : "data/cow.obj",
+        "save_path" : "results/",
+        "image_size" : 256,
+        "fps" : 5,
+        "duration" : 5,
+        "n_views" : 36,
+        "num_samples" : 10,
+        "n_view_config" : {
+            "dist": [-3.0]*36,
+            "elev": [0.0]*36,
+            "azim": list(np.linspace(0,360,36)),
+            "color_texture": False,
+            "up": ((0,1,0),)
+        }
+    },
 }
 
 
@@ -220,6 +237,12 @@ def main(args):
         # images = render_textured_mesh(obj_path=config["obj_path"], image_size=config["image_size"], n=config["n_views"], morph=config["morph"], **config["n_view_config"])
         # save_path = config["save_path"] + q6 + ".2b.gif"
         # make_gif(images, save_path, config["fps"])
+    
+    elif args.question == "q7":
+        q7 = args.question
+        imgs = sample_points_from_mesh(obj_path=config["obj_path"],n=config["n_views"], num_samples=config["num_samples"], image_size=config["image_size"], **config["n_view_config"])
+        save_path = config["save_path"] + q7 + "_" + str(config["num_samples"]) + ".gif"
+        make_gif(imgs, save_path, config["fps"])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -233,35 +256,3 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     main(args)
-    # parser.add_argument(
-    #     "--render",
-    #     type=str,
-    #     default="point_cloud",
-    #     choices=["point_cloud", "parametric", "implicit", "rgbd"],
-    # )
-    # parser.add_argument("--output_path", type=str, default="results/bridge.jpg")
-    # parser.add_argument("--image_size", type=int, default=256)
-    # parser.add_argument("--num_samples", type=int, default=100)
-    # parser.add_argument("--fps", type=int, default=5)
-    # args = parser.parse_args()
-    # if args.render == "point_cloud":
-    #     image = render_bridge(image_size=args.image_size)
-    # elif args.render == "parametric":
-    #     # image = render_sphere(image_size=args.image_size, num_samples=args.num_samples)
-    #     image = render_torus(image_size=args.image_size, num_samples=args.num_samples, n_views=10)
-    #     make_gif(image, args.output_path, args.fps)
-    # elif args.render == "implicit":
-    #     # image = render_sphere_mesh(image_size=args.image_size)
-    #     image = render_torus_mesh(image_size=args.image_size, n_views=10)
-    #     make_gif(image, args.output_path, args.fps)
-    # elif args.render == "rgbd":
-    #     image1,image2,image3 = render_rgbd_point_cloud(n_views=10)
-    #     fname = args.output_path.split(".")[0]
-    #     make_gif(image1, fname+"1.gif", args.fps)
-    #     make_gif(image2, fname+"2.gif", args.fps)
-    #     make_gif(image3, fname+"3.gif", args.fps)
-    #     # plt.imsave(fname+"1.jpg", image1)
-    #     # plt.imsave(fname+"2.jpg", image2)
-    # else:
-    #     raise Exception("Did not understand {}".format(args.render))
-    # plt.imsave(args.output_path, image)
